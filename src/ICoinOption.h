@@ -1,8 +1,9 @@
 #pragma once
 
 #include "btc_def.h"
+#include <vector>
 
-struct ICoinProfile
+struct ICoinOption
 {
 	std::string prev_name;
 

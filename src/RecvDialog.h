@@ -4,14 +4,14 @@
 
 // CRecvDialog 对话框
 
-struct ICoinProfile;
+struct ICoinOption;
 
 class CRecvDialog : public CDialog
 {
 	DECLARE_DYNAMIC(CRecvDialog)
 
 public:
-	CRecvDialog(shared_ptr<ICoinProfile>, CWnd* pParent = NULL);   // 标准构造函数
+	CRecvDialog(shared_ptr<ICoinOption>, CWnd* pParent = NULL);   // 标准构造函数
 	virtual ~CRecvDialog();
 
 // 对话框数据
@@ -23,5 +23,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CListCtrl m_list;
-	shared_ptr<ICoinProfile> m_pCoinProfile;
+	shared_ptr<ICoinOption> m_pCoinOption;
 };

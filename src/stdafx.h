@@ -39,7 +39,7 @@
 #endif
 
 
-
+#pragma warning(disable:4996)
 #include <assert.h>
 
 //#include <boost/shared_ptr.hpp>

@@ -101,17 +101,16 @@ uint256 double_sha256(const void* src, size_t len)
 	return r;
 }
 
-
-uint160 _hash_160(const BYTE* src, size_t len)
+std::string GetAppFile(const std::string& name)
 {
-	uint256 h256;
-	SHA256(src, len, h256.data);
-	uint160 r;
-	RIPEMD160(h256.data, sizeof(h256), r.data);
-	return r;
-}
-
-uint256 _hash_256(const BYTE* src, size_t len)
-{
-	return double_sha256(src, len);
+	std::string s;
+	s.resize(MAX_PATH);
+	s.resize( GetModuleFileNameA(0, (char*)s.c_str(), MAX_PATH) );
+	size_t pos = s.rfind('\\');
+	if (pos != std::string::npos)
+	{
+		s.erase( pos+1, std::string::npos );
+	}
+	s += name;
+	return s;
 }

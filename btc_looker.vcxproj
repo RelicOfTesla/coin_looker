@@ -110,19 +110,21 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\btc_def.h" />
+    <ClInclude Include="src\btc_helper.h" />
     <ClInclude Include="src\btc_looker.h" />
     <ClInclude Include="src\btc_lookerDlg.h" />
     <ClInclude Include="src\btc_peer.h" />
     <ClInclude Include="src\btc_peer.hpp" />
     <ClInclude Include="src\btc_protocol.h" />
     <ClInclude Include="src\btc_stream.hpp" />
-    <ClInclude Include="src\ICoinProfile.h" />
+    <ClInclude Include="src\ICoinOption.h" />
     <ClInclude Include="src\RecvDialog.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\targetver.h" />
     <ClInclude Include="src\util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\btc_helper.cpp" />
     <ClCompile Include="src\btc_kernel.cpp" />
     <ClCompile Include="src\btc_looker.cpp" />
     <ClCompile Include="src\btc_lookerDlg.cpp" />

@@ -4,8 +4,8 @@
 #include <boost/thread.hpp>
 #include "ICoinProfile.h"
 #include "btc_stream.hpp"
+#include "btc_helper.h"
 //////////////////////////////////////////////////////////////////////////
-uint256 double_sha256(const void* src, size_t len);
 
 static CAddress caddress_from_endpoint(tcp::endpoint& ep, BOOL net)
 {
@@ -17,10 +17,6 @@ static CAddress caddress_from_endpoint(tcp::endpoint& ep, BOOL net)
 	return r;
 }
 
-uint256 calc_block_hash(const struct CBlockHeader& hdr)
-{
-	return double_sha256(&hdr, sizeof(CBlockHeader));
-}
 
 std::string FormatSubVersion(const std::string& name, const std::string ClientVersion)
 {
@@ -29,14 +25,14 @@ std::string FormatSubVersion(const std::string& name, const std::string ClientVe
 
 std::string g_ClientVersion = FormatSubVersion("my-looker","1.0");
 //////////////////////////////////////////////////////////////////////////
-CPeerNode::CPeerNode(boost::asio::io_service& service, shared_ptr<ICoinProfile> profile) 
-	: m_sk(service) , m_connect_start_time(0), m_ver_finish_time(0), m_pProfile(profile)
+CPeerNode::CPeerNode(boost::asio::io_service& service, shared_ptr<ICoinOption> pCoinOption) 
+	: m_sk(service) , m_connect_start_time(time(0)), m_ver_finish_time(0), m_pCoinOption(pCoinOption)
 {}
 
 void CPeerNode::send_package(const char* command, binary& bin)
 {
 	assert(strlen(command) <= 12);
-	CMessageHeader hdr(m_pProfile->pchMessageStart, command, bin.size());
+	CMessageHeader hdr(m_pCoinOption->pchMessageStart, command, bin.size());
 	uint256 hash = double_sha256(bin.data(), bin.size());
 	hdr.nChecksum = *(UINT*)&hash;
 	m_sk.send(asio::buffer(&hdr, sizeof(hdr)));
@@ -46,7 +42,7 @@ void CPeerNode::send_package(const char* command, binary& bin)
 void CPeerNode::send_version(int nBestHeight, const std::string& SubVer)
 {
 	CVersionCmdHead ver;
-	ver.ProtocolVersion = m_pProfile->protocol_version;
+	ver.ProtocolVersion = m_pCoinOption->protocol_version;
 	ver.nService = 0;
 	ver.AdjustTime = _time64(0);
 	ver.remote = caddress_from_endpoint(m_sk.remote_endpoint(), TRUE);
@@ -158,7 +154,9 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 		{
 			shared_ptr<CBlock> pBlock(new CBlock);
 			stm >> *pBlock;
-			on_new_block(pBlock);
+			//uint256 hash = calc_block_hash(*pBlock);
+			boost::mutex::scoped_lock lock(m_mutex_task);
+			m_taskpool.push_back( pBlock );
 		}
 		else if (strcmp(cmd.pchCommand, "headers") == 0)
 		{
@@ -176,8 +174,6 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 					{
 						uint256 hash = calc_block_hash(hdr);
 						request_list.push_back(hash);
-						this->on_new_head(*it);
-
 						m_last_block_time = hdr.nTime;
 						m_last_block_hash = hash;
 						last_block_hash = hash;
@@ -212,12 +208,28 @@ shared_ptr<CVersionCmdHead> CPeerNode::GetDestVersion()
 	return m_pDestVersion;
 }
 
-void CPeerNode::on_new_head(struct CBlockHeader& hdr)
-{
-}
-void CPeerNode::on_new_block(shared_ptr<CBlock> pBlock)
-{
 
+tcp::socket& CPeerNode::GetObject()
+{
+	return m_sk;
+}
+
+bool CPeerNode::IsCheckTimeout()
+{
+	if (m_ver_finish_time > 0)
+	{
+		return false;
+	}
+	return (time(0) - m_connect_start_time) > 60;
+}
+
+size_t CPeerNode::GetDelaySpeed()
+{
+	if (m_ver_finish_time > 0)
+	{
+		return size_t(m_ver_finish_time - m_connect_start_time);
+	}
+	return (size_t)-1;
 }
 
 void CPeerNode::async_download(const uint256& last_block_hash, UINT32 last_block_time)
@@ -233,34 +245,49 @@ void CPeerNode::async_recv()
 		std::bind(&CPeerNode::on_recv, shared_from_this(), std::asio::placeholders::error ,std::asio::placeholders::bytes_transferred));
 
 }
-//////////////////////////////////////////////////////////////////////////
-void CPeerGroup::async_connect_from_profile(shared_ptr<ICoinProfile> pProfile)
+
+void CPeerNode::filter_modal()
 {
-	for (auto dns_it = pProfile->DNSSeed.begin(); dns_it != pProfile->DNSSeed.end(); ++dns_it)
+	std::list< shared_ptr<CBlock> > tasklist;
+	{
+		boost::mutex::scoped_lock lock(m_mutex_task);
+		tasklist = m_taskpool;
+		m_taskpool.clear();
+	}
+	for (auto bit = tasklist.begin(); bit != tasklist.end(); ++bit)
+	{
+		shared_ptr<CBlock> p = *bit;
+		uint256 hash = calc_block_hash(*p);
+		pfn_OnNewBlock(hash, *p);
+	}
+}
+//////////////////////////////////////////////////////////////////////////
+void CPeerGroup::async_connect_from_profile(shared_ptr<ICoinOption> pCoinOption)
+{
+	for (auto dns_it = pCoinOption->DNSSeed.begin(); dns_it != pCoinOption->DNSSeed.end(); ++dns_it)
 	{
 		std::list<tcp::endpoint> eps = asio_query_all_endpoint(m_service, *dns_it, "");
 		for (auto eit = eps.begin(); eit != eps.end(); ++eit)
 		{
 			tcp::endpoint ep = *eit;
-			ep.port(pProfile->port);
-			async_connect(pProfile, ep);
+			ep.port(pCoinOption->port);
+			async_connect(pCoinOption, ep);
 		}
 	}
 }
 
-void CPeerGroup::async_connect(shared_ptr<ICoinProfile> pProfile, boost::asio::ip::tcp::endpoint ep)
+void CPeerGroup::async_connect(shared_ptr<ICoinOption> pCoinOption, boost::asio::ip::tcp::endpoint ep)
 {
-	shared_ptr<CPeerNode> peer(new CPeerNode(m_service, pProfile));
-	peer->m_connect_start_time = time(0);
-	peer->m_ver_finish_time = 0;
-	peer->m_sk.open(ep.protocol());
-	peer->m_sk.async_connect(ep, 
-		std::bind(&CPeerGroup::on_connect, shared_from_this(), pProfile, peer, std::asio::placeholders::error));
+	shared_ptr<CPeerNode> peer(new CPeerNode(m_service, pCoinOption));
+	tcp::socket& sk = peer->GetObject();
+	sk.open(ep.protocol());
+	sk.async_connect(ep, 
+		std::bind(&CPeerGroup::on_connect, shared_from_this(), peer, std::asio::placeholders::error));
 	InterlockedIncrement(&m_busy_count);
 	check_state();
 }
 
-void CPeerGroup::on_connect(shared_ptr<ICoinProfile> profile, shared_ptr<CPeerNode> peer, const boost::system::error_code& ec)
+void CPeerGroup::on_connect(shared_ptr<CPeerNode> peer, const boost::system::error_code& ec)
 {
 	if (!ec)
 	{
@@ -285,7 +312,7 @@ shared_ptr<IPeerNode> CPeerGroup::pop_idle()
 			it = m_checking_list.erase(it);
 			continue;
 		}
-		else if (time(0) - p->m_connect_start_time > 60)
+		else if (p->IsCheckTimeout())
 		{
 			InterlockedDecrement(&m_busy_count);
 			it = m_checking_list.erase(it);
@@ -299,13 +326,13 @@ shared_ptr<IPeerNode> CPeerGroup::pop_idle()
 	for (auto it = m_idle.begin(); it != m_idle.end(); ++it)
 	{
 		shared_ptr<CPeerNode> p = *it;
-		ptrdiff_t delay = ptrdiff_t(p->m_ver_finish_time - p->m_connect_start_time);
+		size_t delay = p->GetDelaySpeed();
 		if (!min_peer)
 		{
 			min_peer = p;
 			min_it = it;
 		}
-		else if (delay < min_peer->m_ver_finish_time - min_peer->m_connect_start_time)
+		else if (delay < min_peer->GetDelaySpeed())
 		{
 			min_peer = p;
 			min_it = it;

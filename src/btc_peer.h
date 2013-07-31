@@ -2,9 +2,11 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <sdk/binary.h>
+#include <sdk/boost_lib/signals.hpp>
 #include "btc_def.h"
 
-struct ICoinProfile;
+struct ICoinOption;
+struct CBlock;
 
 struct IPeerNode 
 {
@@ -24,12 +26,13 @@ struct IPeerNode
 		send_getblockdatas(hashs);
 	}
 
+	signals::signal< void(const uint256& hash, const CBlock&) > pfn_OnNewBlock;
 };
 
 struct IPeerGroup 
 {
-	virtual void async_connect_from_profile(shared_ptr<ICoinProfile> ctx) = 0;
-	virtual void async_connect(shared_ptr<ICoinProfile>, boost::asio::ip::tcp::endpoint ep) = 0;
+	virtual void async_connect_from_profile(shared_ptr<ICoinOption> ctx) = 0;
+	virtual void async_connect(shared_ptr<ICoinOption>, boost::asio::ip::tcp::endpoint ep) = 0;
 	virtual shared_ptr<IPeerNode> pop_idle() = 0;
 };
 

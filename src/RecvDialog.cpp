@@ -13,8 +13,8 @@
 
 IMPLEMENT_DYNAMIC(CRecvDialog, CDialog)
 
-CRecvDialog::CRecvDialog(shared_ptr<ICoinProfile> profile, CWnd* pParent /*=NULL*/)
-	: CDialog(CRecvDialog::IDD, pParent), m_pCoinProfile(profile)
+CRecvDialog::CRecvDialog(shared_ptr<ICoinOption> pCoinOption, CWnd* pParent /*=NULL*/)
+	: CDialog(CRecvDialog::IDD, pParent), m_pCoinOption(pCoinOption)
 {
 
 }
