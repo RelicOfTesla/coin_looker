@@ -7,6 +7,6 @@ furture support private-key manager.
 furture support send-money.
 
 
-id:laybor
-e-mail:laybor###126.com
+ID:laybor
+email:laybor#126.com
 ============
