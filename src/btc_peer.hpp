@@ -3,10 +3,8 @@
 #include "btc_peer.h"
 #include <boost/thread/mutex.hpp>
 #include <sdk/boost_lib/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/any.hpp>
 
-using std::enable_shared_from_this;
 
 namespace asio = boost::asio;
 typedef boost::asio::ip::tcp tcp;
@@ -19,15 +17,17 @@ public:
 	size_t GetDelaySpeed();
 	bool IsCheckTimeout();
 	tcp::socket& GetObject();
+	void modal();
 public:
-	virtual void async_download(const uint256& last_block_hash, UINT32 last_block_time);
-	virtual void send_package(const char* command, binary& bin);
-	virtual void send_version(int nBestHeight, const std::string& SubVer);
-	virtual void send_getheaders(const uint256& start_block, const uint256& stop_block = uint256_null);
-	virtual void send_getblockdatas(const std::vector<uint256>& hashs);
-	virtual void send_getblock(const uint256& start_block, const uint256& stop_block = uint256_null);
+	virtual void async_download_headers(const uint256& last_block_hash);
+	virtual void async_download_blocks(const std::vector<uint256>& blocks);
 	virtual shared_ptr<struct CVersionCmdHead> GetDestVersion();
 protected:
+	void send_package(const char* command, binary& bin);
+	void send_version(int nBestHeight, const std::string& SubVer);
+	void send_getheaders(const uint256& start_block, const uint256& stop_block = uint256_null);
+	void send_getblockdatas(const std::vector<uint256>& hashs);
+	void send_getblock(const uint256& start_block, const uint256& stop_block = uint256_null);
 	void _send_getblockdata_n(const uint256* phashs, size_t n);
 	void send_getblockdata(const uint256& hash);
 protected:
@@ -38,15 +38,15 @@ protected:
 	shared_ptr<ICoinOption> m_pCoinOption;
 	shared_ptr<struct CVersionCmdHead> m_pDestVersion;
 	tcp::socket m_sk;
-	time_t m_connect_start_time;
-	time_t m_ver_finish_time;
+	UINT m_connect_start_tick;
+	UINT m_ver_finish_tick;
 	std::array<BYTE,1024> m_buffer;
 	binary m_data;
-	uint256 m_last_block_hash;
-	UINT32 m_last_block_time;
 
-	boost::mutex m_mutex_task;
-	std::list< shared_ptr<CBlock> > m_taskpool;
+	boost::mutex m_mutex_blocks;
+	std::list< shared_ptr<CBlock> > m_block_pool;
+	boost::mutex m_mutex_headers;
+	std::list< shared_ptr< std::vector<CBlock> > > m_headers_pool;
 };
 
 class CPeerGroup : public IPeerGroup, public enable_shared_from_this<CPeerGroup>
@@ -61,6 +61,7 @@ public:
 protected:
 	std::list< shared_ptr<CPeerNode> > m_idle;
 	std::list< shared_ptr<CPeerNode> > m_checking_list;
+	std::list< shared_ptr<CPeerNode> > m_working;
 	boost::mutex m_mutex;
 	boost::asio::io_service m_service;
 	bool m_is_start;

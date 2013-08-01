@@ -2,9 +2,10 @@
 #include "btc_peer.hpp"
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
-#include "ICoinProfile.h"
 #include "btc_stream.hpp"
 #include "btc_helper.h"
+#include "ICoinOption.h"
+
 //////////////////////////////////////////////////////////////////////////
 
 static CAddress caddress_from_endpoint(tcp::endpoint& ep, BOOL net)
@@ -26,7 +27,7 @@ std::string FormatSubVersion(const std::string& name, const std::string ClientVe
 std::string g_ClientVersion = FormatSubVersion("my-looker","1.0");
 //////////////////////////////////////////////////////////////////////////
 CPeerNode::CPeerNode(boost::asio::io_service& service, shared_ptr<ICoinOption> pCoinOption) 
-	: m_sk(service) , m_connect_start_time(time(0)), m_ver_finish_time(0), m_pCoinOption(pCoinOption)
+	: m_sk(service) , m_connect_start_tick(GetTickCount()), m_ver_finish_tick(0), m_pCoinOption(pCoinOption)
 {}
 
 void CPeerNode::send_package(const char* command, binary& bin)
@@ -35,6 +36,7 @@ void CPeerNode::send_package(const char* command, binary& bin)
 	CMessageHeader hdr(m_pCoinOption->pchMessageStart, command, bin.size());
 	uint256 hash = double_sha256(bin.data(), bin.size());
 	hdr.nChecksum = *(UINT*)&hash;
+	assert(m_sk.is_open());
 	m_sk.send(asio::buffer(&hdr, sizeof(hdr)));
 	m_sk.send(asio::buffer(bin));
 }
@@ -47,6 +49,7 @@ void CPeerNode::send_version(int nBestHeight, const std::string& SubVer)
 	ver.AdjustTime = _time64(0);
 	ver.remote = caddress_from_endpoint(m_sk.remote_endpoint(), TRUE);
 	ver.local = caddress_from_endpoint(m_sk.local_endpoint(), FALSE);
+	memset(&ver.local, 0, sizeof(ver.local));
 	ver.nNonce = 1; // rand();
 	ver.ClientVersion = SubVer;
 	ver.nBestHeight = nBestHeight;
@@ -127,6 +130,11 @@ void CPeerNode::start_check()
 
 void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 {
+	if (ec || len==0)
+	{
+		m_sk.close();
+		return;
+	}
 	m_data.insert(m_data.end(), m_buffer.begin(), m_buffer.begin()+len);
 	async_recv();
 
@@ -149,42 +157,24 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 			shared_ptr<CVersionCmdHead> pVer(new CVersionCmdHead);
 			stm >> *pVer;
 			m_pDestVersion = pVer;
+			m_ver_finish_tick = GetTickCount();
 		}
 		else if (strcmp(cmd.pchCommand, "block") == 0)
 		{
 			shared_ptr<CBlock> pBlock(new CBlock);
 			stm >> *pBlock;
-			//uint256 hash = calc_block_hash(*pBlock);
-			boost::mutex::scoped_lock lock(m_mutex_task);
-			m_taskpool.push_back( pBlock );
+			uint256 hash = calc_block_hash(*pBlock);
+			boost::mutex::scoped_lock lock(m_mutex_blocks);
+			m_block_pool.push_back( pBlock );
 		}
 		else if (strcmp(cmd.pchCommand, "headers") == 0)
 		{
-			std::vector<CBlock> newheaders;
-			stm >> newheaders;
-			if (newheaders.size())
+			shared_ptr< std::vector<CBlock> > pHeaders(new std::vector<CBlock> );
+			stm >> *pHeaders;
+			if (pHeaders->size())
 			{
-				uint256 last_block_hash = uint256_null;
-				std::vector<uint256> request_list;
-				request_list.reserve(newheaders.size());
-				for (auto it = newheaders.begin(); it != newheaders.end(); ++it)
-				{
-					CBlockHeader& hdr = *it;
-					if (hdr.nTime >= m_last_block_time)
-					{
-						uint256 hash = calc_block_hash(hdr);
-						request_list.push_back(hash);
-						m_last_block_time = hdr.nTime;
-						m_last_block_hash = hash;
-						last_block_hash = hash;
-					}
-				}
-				send_getblockdatas(request_list);
-				if (last_block_hash == uint256_null)
-				{
-					last_block_hash = calc_block_hash(*newheaders.rbegin());
-				}
-				send_getheaders(last_block_hash);
+				boost::mutex::scoped_lock lock(m_mutex_headers);
+				m_headers_pool.push_back( pHeaders );
 			}
 		}
 // 		else if (strcmp(cmd.pchCommand, "verack") == 0)
@@ -216,50 +206,72 @@ tcp::socket& CPeerNode::GetObject()
 
 bool CPeerNode::IsCheckTimeout()
 {
-	if (m_ver_finish_time > 0)
+	if (m_ver_finish_tick > 0)
 	{
 		return false;
 	}
-	return (time(0) - m_connect_start_time) > 60;
+	return (GetTickCount() - m_connect_start_tick) > 60*1000;
 }
 
 size_t CPeerNode::GetDelaySpeed()
 {
-	if (m_ver_finish_time > 0)
+	if (m_ver_finish_tick > 0)
 	{
-		return size_t(m_ver_finish_time - m_connect_start_time);
+		return m_ver_finish_tick - m_connect_start_tick;
 	}
 	return (size_t)-1;
 }
 
-void CPeerNode::async_download(const uint256& last_block_hash, UINT32 last_block_time)
+void CPeerNode::async_download_headers(const uint256& last_block_hash)
 {
-	m_last_block_hash = last_block_hash;
-	m_last_block_time = last_block_time;
 	send_getheaders(last_block_hash);
+}
+
+void CPeerNode::async_download_blocks(const std::vector<uint256>& blocks)
+{
+	send_getblockdatas(blocks);
 }
 
 void CPeerNode::async_recv()
 {
 	m_sk.async_receive(asio::buffer(m_buffer), 
-		std::bind(&CPeerNode::on_recv, shared_from_this(), std::asio::placeholders::error ,std::asio::placeholders::bytes_transferred));
+		boost::bind(&CPeerNode::on_recv, shared_from_this(), boost::asio::placeholders::error ,boost::asio::placeholders::bytes_transferred));
 
 }
 
 void CPeerNode::filter_modal()
 {
-	std::list< shared_ptr<CBlock> > tasklist;
+	std::list< shared_ptr<CBlock> > blocks;
 	{
-		boost::mutex::scoped_lock lock(m_mutex_task);
-		tasklist = m_taskpool;
-		m_taskpool.clear();
+		boost::mutex::scoped_lock lock(m_mutex_blocks);
+		blocks = m_block_pool;
+		m_block_pool.clear();
 	}
-	for (auto bit = tasklist.begin(); bit != tasklist.end(); ++bit)
+	for (auto bit = blocks.begin(); bit != blocks.end(); ++bit)
 	{
 		shared_ptr<CBlock> p = *bit;
 		uint256 hash = calc_block_hash(*p);
 		pfn_OnNewBlock(hash, *p);
 	}
+
+	std::list< shared_ptr< std::vector<CBlock> > > headers;
+	{
+		boost::mutex::scoped_lock lock(m_mutex_headers);
+		headers = m_headers_pool;
+		m_headers_pool.clear();
+	}
+	for (auto bit = headers.begin(); bit != headers.end(); ++bit)
+	{
+		shared_ptr< std::vector<CBlock> > p = *bit;
+		pfn_OnNewHeaderList(*p);
+	}
+
+
+}
+
+void CPeerNode::modal()
+{
+	filter_modal();
 }
 //////////////////////////////////////////////////////////////////////////
 void CPeerGroup::async_connect_from_profile(shared_ptr<ICoinOption> pCoinOption)
@@ -291,10 +303,16 @@ void CPeerGroup::on_connect(shared_ptr<CPeerNode> peer, const boost::system::err
 {
 	if (!ec)
 	{
-		peer->start_check();
-		boost::mutex::scoped_lock lock(m_mutex);
-		m_checking_list.push_back(peer);
-		return;
+		try
+		{
+			peer->start_check();
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_checking_list.push_back(peer);
+			return;
+		}
+		catch(std::exception& )
+		{
+		}
 	}
 	InterlockedDecrement(&m_busy_count);
 }
@@ -316,6 +334,7 @@ shared_ptr<IPeerNode> CPeerGroup::pop_idle()
 		{
 			InterlockedDecrement(&m_busy_count);
 			it = m_checking_list.erase(it);
+			p->GetObject().close();
 			continue;
 		}
 		++it;
@@ -340,6 +359,7 @@ shared_ptr<IPeerNode> CPeerGroup::pop_idle()
 	}
 	if (min_peer)
 	{
+		m_working.push_back(min_peer);
 		m_idle.erase(min_it);
 	}
 	return min_peer;
@@ -352,7 +372,16 @@ void CPeerGroup::domodal()
 	{
 		try
 		{
-			m_service.run();
+			while( m_service.poll_one() )
+			{
+
+			}
+			for (auto it = m_working.begin(); it != m_working.end(); ++it)
+			{
+				shared_ptr<CPeerNode>& p = *it;
+				p->modal();
+			}
+			boost::this_thread::sleep(boost::posix_time::seconds(1));
 		}
 		catch(std::exception& e)
 		{

@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "btc_helper.h"
-#include "ICoinProfile.h"
 #include <sdk/binary_stream.hpp>
 #include "btc_protocol.h"
+#include "ICoinOption.h"
 
 enum {
 	OP_DUP = 0x76,
@@ -51,7 +51,7 @@ std::string hash160_to_CoinAddress(const uint160& hash_value, ICoinOption* profi
 	return hash160_to_CoinAddress(hash_value, profile->PubkeyStart);
 }
 
-std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script)
+std::string script_get_coin_address(ICoinOption* pCoinOption, const CScript& script)
 {
 	binary_istream bi(script.data);
 	if (bi.has_buffer(3))
@@ -90,7 +90,7 @@ std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script
 						if(buf.size() == sizeof(ripemd160))
 						{
 							ripemd160 v = *(ripemd160*)&buf[0];
-							//							return ripemd160_to_CoinAddress(v, pProfile);
+							//return ripemd160_to_CoinAddress(v, pCoinOption);
 						}
 						break;
 					case OP_SHA1:
@@ -98,7 +98,7 @@ std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script
 						if(buf.size() == sizeof(sha1))
 						{
 							sha1 v = *(sha1*)&buf[0];
-							//							return sha1_to_CoinAddress(v, pProfile);							
+							//return sha1_to_CoinAddress(v, pCoinOption);							
 						}
 						break;
 					case OP_SHA256:
@@ -106,7 +106,7 @@ std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script
 						if(buf.size() == sizeof(sha256))
 						{
 							sha256 v = *(sha256*)&buf[0];
-							//							return sha256_to_CoinAddress(v, pProfile);							
+							//return sha256_to_CoinAddress(v, pCoinOption);							
 						}
 						break;
 					case OP_HASH160:
@@ -114,7 +114,7 @@ std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script
 						if (buf.size() == sizeof(hash160))
 						{
 							hash160 v = *(hash160*)&buf[0];
-							return hash160_to_CoinAddress(v, pProfile);							
+							return hash160_to_CoinAddress(v, pCoinOption);							
 						}
 						break;
 					case OP_HASH256:
@@ -122,7 +122,7 @@ std::string script_get_coin_address(ICoinOption* pProfile, const CScript& script
 						if (buf.size() == sizeof(hash256))
 						{
 							hash256 v = *(hash256*)&buf[0];
-							//							return hash256_to_CoinAddress(v, pProfile);							
+							//return hash256_to_CoinAddress(v, pCoinOption);							
 						}
 						break;
 					}

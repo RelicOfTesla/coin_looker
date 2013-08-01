@@ -65,6 +65,25 @@ std::string to_hex(const void* src, size_t len)
 	return buf;
 }
 
+binary from_hex(const char* src)
+{
+	size_t len = strlen(src);
+	if (len & 1)
+	{
+		return binary();
+	}
+	binary r;
+	r.reserve(len);
+	char hex[3]={0};
+	for (size_t i = 0; i < len; i+=2)
+	{
+		hex[0] = src[i];
+		hex[1] = src[i+1];
+		r.push_back( strtol(hex, nullptr, 16) );
+	}
+	return r;
+}
+
 std::string uint256_to_rstr(const uint256& src) // uint256 to reverse string
 {
 	const int maxsize = sizeof(src);
@@ -101,7 +120,8 @@ uint256 double_sha256(const void* src, size_t len)
 	return r;
 }
 
-std::string GetAppFile(const std::string& name)
+
+std::string GetAppDir()
 {
 	std::string s;
 	s.resize(MAX_PATH);
@@ -111,6 +131,10 @@ std::string GetAppFile(const std::string& name)
 	{
 		s.erase( pos+1, std::string::npos );
 	}
-	s += name;
 	return s;
+}
+
+std::string GetAppFile(const std::string& name)
+{
+	return GetAppDir() + name;
 }

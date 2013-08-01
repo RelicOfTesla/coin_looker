@@ -43,9 +43,10 @@
 #include <assert.h>
 
 //#include <boost/shared_ptr.hpp>
-#include <sdk/tr1.h>
-using std::shared_ptr;
-
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+#include <boost/enable_shared_from_this.hpp>
+using boost::enable_shared_from_this;
 
 
 #if _MFC_VER <= 0x0900

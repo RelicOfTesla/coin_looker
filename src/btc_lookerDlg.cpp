@@ -5,9 +5,16 @@
 #include "stdafx.h"
 #include "btc_looker.h"
 #include "btc_lookerDlg.h"
+#include "RecvDialog.h"
 #if _MFC_VER >= 0x0A00
 #include "afxdialogex.h"
 #endif
+
+#include <ICoinOption.h>
+#include <list>
+
+#include <boost/thread/thread.hpp>
+#include "IUserContext.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -16,7 +23,11 @@
 
 // Cbtc_lookerDlg 对话框
 
+std::string GetAppDir();
+std::list<shared_ptr< ICoinOption > > LoadCoinList(const std::string& dir);
 
+
+std::list<shared_ptr< ICoinOption > > g_CoinList;
 
 
 Cbtc_lookerDlg::Cbtc_lookerDlg(CWnd* pParent /*=NULL*/)
@@ -28,6 +39,7 @@ Cbtc_lookerDlg::Cbtc_lookerDlg(CWnd* pParent /*=NULL*/)
 void Cbtc_lookerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_TAB1, m_tab1);
 }
 
 BEGIN_MESSAGE_MAP(Cbtc_lookerDlg, CDialogEx)
@@ -35,6 +47,8 @@ BEGIN_MESSAGE_MAP(Cbtc_lookerDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDOK, &Cbtc_lookerDlg::OnBnClickedOk)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &Cbtc_lookerDlg::OnTcnSelchangeTab1)
+	ON_NOTIFY(TCN_SELCHANGING, IDC_TAB1, &Cbtc_lookerDlg::OnTcnSelchangingTab1)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -50,7 +64,29 @@ BOOL Cbtc_lookerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	auto g_CoinList = LoadCoinList(GetAppDir());
+	if (g_CoinList.size())
+	{
+		int idx = 0;
+		for (auto it = g_CoinList.begin(); it != g_CoinList.end(); ++it)
+		{
+			shared_ptr<ICoinOption> pCoinOption = *it;
+			shared_ptr<IUserContext> pWork = create_coin_work(pCoinOption);
+			boost::thread th(boost::bind(&IUserContext::load_db, pWork));
+			shared_ptr<CRecvDialog> pDlg(new CRecvDialog(pWork, &m_tab1));
+			pDlg->Create(CRecvDialog::IDD);
+			CRect r;
+			pDlg->GetWindowRect(r);
+			r.top += 18;
+			r.left += 14;
+			pDlg->MoveWindow(r);
+			m_tab1.InsertItem(m_tab1.GetItemCount(), pCoinOption->prev_name.c_str());
+			m_vlist.push_back(pDlg);
+		}
+		m_vlist[0]->ShowWindow(SW_SHOW);
+	}
 
+	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -109,6 +145,30 @@ void Cbtc_lookerDlg::OnBnClickedOk()
 
 void Cbtc_lookerDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {
+	m_vlist[m_tab1.GetCurSel()]->ShowWindow(SW_SHOW);
 	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
+}
+
+
+void Cbtc_lookerDlg::OnTcnSelchangingTab1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	m_vlist[m_tab1.GetCurSel()]->ShowWindow(SW_HIDE);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+}
+
+
+void Cbtc_lookerDlg::OnClose()
+{
+	for (auto it = m_vlist.begin(); it != m_vlist.end(); ++it)
+	{
+		shared_ptr<CRecvDialog> p = *it;
+		if (p)
+		{
+			p->uninit();
+		}
+	}
+	m_vlist.clear();
+	CDialogEx::OnClose();
 }

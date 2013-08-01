@@ -44,13 +44,13 @@
     <OutDir>$(SolutionDir)out\</OutDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)D</TargetName>
-    <IncludePath>E:\devlib\openssl-1.0.1c\include;$(IncludePath)</IncludePath>
+    <IncludePath>E:\devlib\openssl-1.0.1c\include;E:\devlib\jsoncpp-src-0.5.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>e:/tmp-dev/$(SolutionName)/$(ProjectName)/$(ConfigurationName)/</IntDir>
     <OutDir>$(SolutionDir)out\</OutDir>
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>E:\devlib\openssl-1.0.1c\include;$(IncludePath)</IncludePath>
+    <IncludePath>E:\devlib\openssl-1.0.1c\include;E:\devlib\jsoncpp-src-0.5.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -63,8 +63,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\devlib\openssl-1.0.1c\out32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\devlib\openssl-1.0.1c\out32;E:\devlib\jsoncpp-src-0.5.0\build\vs71\debug\lib_json;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libeay32.lib;json_vc71_libmtD.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -92,8 +92,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>E:\devlib\openssl-1.0.1c\out32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\devlib\openssl-1.0.1c\out32;E:\devlib\jsoncpp-src-0.5.0\build\vs71\release\lib_json;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libeay32.lib;json_vc71_libmt.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -107,6 +107,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="IUserContext.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\btc_def.h" />
@@ -129,6 +130,7 @@
     <ClCompile Include="src\btc_looker.cpp" />
     <ClCompile Include="src\btc_lookerDlg.cpp" />
     <ClCompile Include="src\btc_peer.cpp" />
+    <ClCompile Include="src\JsonCoinOption.cpp" />
     <ClCompile Include="src\RecvDialog.cpp" />
     <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

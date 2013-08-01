@@ -1,0 +1,16 @@
+{
+	"Name" : "Bitcoin",
+	"DnsList" : [
+		"seed.bitcoin.sipa.be",
+		"dnsseed.bluematt.me",
+		"dnsseed.bitcoin.dashjr.org",
+		"bitseed.xf2.org"
+	],
+	"NetHead" : "f9beb4d9",
+	"NetPort" :  8333,
+	"NetVersion" : 70001,
+	//"first_block_hash" : "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+	"first_block_hash" : "000000000000038600012e562426bb8d8c7123f558483d9302039152d8c8fcae",
+	"first_block_time" : 0,//-8640000,
+	"Pubkey_Start" : 0
+}

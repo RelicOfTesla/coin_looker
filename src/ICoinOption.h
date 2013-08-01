@@ -2,6 +2,7 @@
 
 #include "btc_def.h"
 #include <vector>
+#include <array>
 
 struct ICoinOption
 {

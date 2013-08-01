@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+#include "afxcmn.h"
 
 // Cbtc_lookerDlg ¶Ô»°¿ò
 class Cbtc_lookerDlg : public CDialogEx
@@ -31,4 +33,10 @@ protected:
 public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult);
+protected:
+	std::vector< shared_ptr<class CRecvDialog> > m_vlist;
+public:
+	CTabCtrl m_tab1;
+	afx_msg void OnTcnSelchangingTab1(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnClose();
 };
