@@ -1,5 +1,5 @@
 
-// btc_looker.h : PROJECT_NAME 应用程序的主头文件
+// coin_looker.h : PROJECT_NAME 应用程序的主头文件
 //
 
 #pragma once
@@ -11,14 +11,14 @@
 #include "resource.h"		// 主符号
 
 
-// Cbtc_lookerApp:
-// 有关此类的实现，请参阅 btc_looker.cpp
+// Ccoin_lookerApp:
+// 有关此类的实现，请参阅 coin_looker.cpp
 //
 
-class Cbtc_lookerApp : public CWinApp
+class Ccoin_lookerApp : public CWinApp
 {
 public:
-	Cbtc_lookerApp();
+	Ccoin_lookerApp();
 
 // 重写
 public:
@@ -29,4 +29,4 @@ public:
 	DECLARE_MESSAGE_MAP()
 };
 
-extern Cbtc_lookerApp theApp;
+extern Ccoin_lookerApp theApp;

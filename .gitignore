@@ -1,8 +1,10 @@
 /*.vsp
 
-/out/btc_looker.exe
-/out/btc_looker.pdb
-/out/btc_lookerD.exe
-/out/btc_lookerD.pdb
+/out/coin_looker.exe
+/out/coin_looker.pdb
+/out/coin_lookerD.exe
+/out/coin_lookerD.pdb
 
 /out/*.blocks
+
+/out/*.bak

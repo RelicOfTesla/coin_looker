@@ -2,9 +2,9 @@
 #include "stdafx.h"
 #include <set>
 #include <sdk/win32_fstream.hpp>
-#include "btc_peer.h"
-#include "btc_stream.hpp"
-#include "btc_helper.h"
+#include "coin_peer.h"
+#include "coin_stream.hpp"
+#include "coin_helper.h"
 #include "ICoinOption.h"
 #include <boost/thread/mutex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -12,7 +12,7 @@
 
 uint256 calc_transaction_hash(const CTransaction& tx)
 {
-	btcnet_ostream stm;
+	coinnet_ostream stm;
 	stm << tx;
 	return double_sha256(stm.ostm.m_data.data(), stm.ostm.m_data.size());
 }
@@ -112,8 +112,11 @@ bool CLocalBlockDB::read_from_file(const std::string& name, CLocalBlockDB& block
 void CLocalBlockDB::save_to_file(const std::string& name, const CLocalBlockDB& block_db)
 {
 	boost::mutex::scoped_lock lock(*(boost::mutex*)&block_db.mutex_blocks);
-	win32_fstream fstm(GetAppFile(name), OPEN_ALWAYS);
-	fstm << block_db;
+	{
+		win32_fstream fstm(GetAppFile(name)+".tmp", OPEN_ALWAYS);
+		fstm << block_db;
+	}
+	MoveFileEx((GetAppFile(name)+".tmp").c_str(), GetAppFile(name).c_str(), MOVEFILE_REPLACE_EXISTING|MOVEFILE_COPY_ALLOWED );
 }
 
 struct CUserBook
@@ -217,7 +220,7 @@ public:
 	{
 		if (m_bChange || must)
 		{
-			if (time(0) - m_last_save_time > 10*1000)
+			if (time(0) - m_last_save_time > 60*1000)
 			{
 				CLocalBlockDB::save_to_file(m_pCoinOption->prev_name+".blocks", *m_pBlockDB);
 				m_bChange = false;
@@ -269,6 +272,10 @@ public:
 
 void CWorkContext::filter_heads(const std::vector<CBlock>& newheaders)
 {
+#if _DEBUG
+	UINT filter_time = GetTickCount();
+	printf("Begin Headers filter, Count=%d\n", newheaders.size());
+#endif
 	UINT32 last_block_time = m_pBlockDB->last_block_time;
 	uint256 last_block_hash = uint256_null;
 	std::vector<uint256> request_list;
@@ -293,31 +300,35 @@ void CWorkContext::filter_heads(const std::vector<CBlock>& newheaders)
 		last_block_hash = calc_block_hash(*newheaders.rbegin());
 	}
 	m_pCurrentPeer->async_download_headers(last_block_hash);
+#if _DEBUG
+	printf("End Headers filter.Take time=%d\n", GetTickCount()-filter_time);
+#endif
 }
 
 void CWorkContext::filter_block(const uint256& block_hash, const CBlock& blk)
 {
+#if _DEBUG
 	if( blk.hashPrevBlock != m_pBlockDB->last_block_hash )
 	{
 		// blockchain check
-#if _DEBUG
 //		DebugBreak();
-#endif
 	}
+#endif
 	m_pBlockDB->last_block_time = blk.nTime;
 	m_pBlockDB->last_block_hash = block_hash;
 #if _DEBUG
 	std::string szHash = uint256_to_rstr(block_hash);
+	UINT filter_time = GetTickCount();
+	printf("Begin Block %s filter \n", szHash.c_str());
 #endif
-	OutputDebugString("Begin Block 1 filter \n");
 	shared_ptr<CBlock> save_blk(new CBlock);
 	*static_cast<CBlockHeader*>(save_blk.get()) = blk;
 
 	for (auto tit = blk.vtx.begin(); tit != blk.vtx.end(); ++tit)
 	{
 		const CTransaction& t = *tit;
-		uint256 txid = calc_transaction_hash(t);
 #if _DEBUG
+		uint256 txid = calc_transaction_hash(t);
 		std::string szTxid = uint256_to_rstr(txid);
 #endif
 		transaction_map_index new_tmi;
@@ -334,7 +345,7 @@ void CWorkContext::filter_block(const uint256& block_hash, const CBlock& blk)
 					if (tmi.out_index == In.prevout.n)
 					{
 #if _DEBUG
-						std::string pretx = uint256_to_rstr(In.prevout.hash);
+						std::string pre_tx = uint256_to_rstr(In.prevout.hash);
 #endif
 						save_tx = true;
 						new_tmi.out_index = -1;
@@ -365,6 +376,9 @@ void CWorkContext::filter_block(const uint256& block_hash, const CBlock& blk)
 		}
 		if (save_tx)
 		{
+#if !_DEBUG
+			uint256 txid = calc_transaction_hash(t);
+#endif
 			save_blk->vtx.push_back(*tit);
 			new_tmi.block_hash = block_hash;
 			new_tmi.tx_index = save_blk->vtx.size() - 1;
@@ -378,7 +392,9 @@ void CWorkContext::filter_block(const uint256& block_hash, const CBlock& blk)
 		m_pBlockDB->blocks.insert(std::make_pair(block_hash, save_blk));
 		m_bChange = true;
 	}
-	OutputDebugString("End Block 1 filter \n");
+#if _DEBUG
+	printf("End Block filter. take=%d \n", GetTickCount() - filter_time);
+#endif
 	Sleep(1);
 }
 
@@ -441,7 +457,7 @@ public:
 		}
 		else
 		{
-			//worker->save_check();
+			this->save_check();
 		}
 	}
 
@@ -467,17 +483,13 @@ public:
 	{
 		workdata wd;
 		wd.RecvCoinAddr = pCoinAddr;
-		wd.LastMoney = 0;
 		wd.RecvMoney = 0;
-		wd.LastTime = 0;
+		__int64 RecvMoney = 0;
 		CoinKey CoinAddr(pCoinAddr);
 		if (CoinAddr.empty())
 		{
 			return wd;
 		}
-
-		__int64 LastMoney = 0;
-		__int64 RecvMoney = 0;
 		std::map< uint256,shared_ptr<CBlock> > blocks;
 		{
 			boost::mutex::scoped_lock lock(this->m_pBlockDB->mutex_blocks);
@@ -494,6 +506,7 @@ public:
 			for(auto tit = blk->vtx.begin(); tit != blk->vtx.end(); ++tit)
 			{
 				const CTransaction& t = *tit;
+				std::string txid = uint256_to_rstr( calc_transaction_hash(t) );
 				{
 					for (auto iit = t.vin.begin(); iit != t.vin.end(); ++iit)
 					{
@@ -506,11 +519,11 @@ public:
 								if ( key == CoinAddr)
 								{
 									RecvMoney -= vout.nValue;
-									if (wd.LastTime < blk->nTime)
-									{
-										wd.LastTime = blk->nTime;
-										LastMoney = -vout.nValue;
-									}
+									workdata::transaction_data td;
+									td.time = blk->nTime;
+									td.money = -ToMoney(vout.nValue);
+									td.txid = txid;
+									wd.trans_list.push_back(td);
 								}
 							}
 						}
@@ -518,23 +531,30 @@ public:
 				}
 				for (auto oit = t.vout.begin(); oit != t.vout.end(); ++oit)
 				{
-					CoinKey key = script_get_coin_key(this->m_pCoinOption.get(), oit->scriptPubKey);
+					const CTxOut& vout = *oit;
+					CoinKey key = script_get_coin_key(this->m_pCoinOption.get(), vout.scriptPubKey);
 					if (!key.empty())
 					{
 						if (key == CoinAddr)
 						{
-							RecvMoney += oit->nValue;
-							if (wd.LastTime < blk->nTime)
-							{
-								wd.LastTime = blk->nTime;
-								LastMoney = oit->nValue;
-							}
+							RecvMoney += vout.nValue;
+							workdata::transaction_data td;
+							td.time = blk->nTime;
+							td.money = ToMoney(vout.nValue);
+							td.txid = txid;
+							wd.trans_list.push_back(td);
 						}
 					}
 				}
 			}
 		}
-		wd.LastMoney = ToMoney(LastMoney);
+		std::sort(wd.trans_list.begin(),
+			wd.trans_list.end(),
+			[] (const workdata::transaction_data& left, const workdata::transaction_data& right)->bool
+		{
+			return left.time < right.time;
+		}
+			);
 		wd.RecvMoney = ToMoney(RecvMoney);
 		return wd;
 	}
@@ -556,7 +576,7 @@ shared_ptr<IUserContext> create_coin_work(shared_ptr<ICoinOption> pCoinOption)
 
 void bitcoin_test()
 {
-// 	shared_ptr<ICoinOption> pCoinOption(new CBtcOption);
+// 	shared_ptr<ICoinOption> pCoinOption(new CcoinOption);
 // 	boost::shared_ptr<CWorkContext> pWork = create_coin_work(pCoinOption);
 // 	for (;;)
 // 	{

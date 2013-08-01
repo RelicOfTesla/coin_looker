@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "btc_peer.hpp"
+#include "coin_peer.hpp"
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
-#include "btc_stream.hpp"
-#include "btc_helper.h"
+#include "coin_stream.hpp"
+#include "coin_helper.h"
 #include "ICoinOption.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,14 +53,14 @@ void CPeerNode::send_version(int nBestHeight, const std::string& SubVer)
 	ver.nNonce = 1; // rand();
 	ver.ClientVersion = SubVer;
 	ver.nBestHeight = nBestHeight;
-	btcnet_ostream stm;
+	coinnet_ostream stm;
 	stm << ver;
 	send_package("version", stm.ostm.m_data);
 }
 
 void CPeerNode::send_getheaders(const uint256& start_block, const uint256& stop_block)
 {
-	btcnet_ostream stm;
+	coinnet_ostream stm;
 	UINT32 nVersion = 0;
 	stm << UINT32(nVersion)
 		<< CompactSize(1)
@@ -83,7 +83,7 @@ void CPeerNode::_send_getblockdata_n(const uint256* phashs, size_t n)
 		invs[i].type = MSG_BLOCK;
 		invs[i].hash = phashs[i];
 	}
-	btcnet_ostream stm;
+	coinnet_ostream stm;
 	stm << invs;
 	send_package("getdata", stm.ostm.m_data);
 }
@@ -111,7 +111,7 @@ void CPeerNode::send_getblockdata(const uint256& hash)
 }
 void CPeerNode::send_getblock(const uint256& start_block, const uint256& stop_block)
 {
-	btcnet_ostream stm;
+	coinnet_ostream stm;
 	UINT32 nVersion = 0;
 	stm << UINT32(nVersion)
 		<< CompactSize(1)
@@ -140,7 +140,7 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 
 	while(true)
 	{
-		btcnet_istream stm(m_data);
+		coinnet_istream stm(m_data);
 		if( !stm.has_buffer(sizeof(CMessageHeader)) )
 		{
 			break;
@@ -159,6 +159,22 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 			m_pDestVersion = pVer;
 			m_ver_finish_tick = GetTickCount();
 		}
+#if _DEBUG
+		else if( strcmp(cmd.pchCommand, "verack")==0 )
+		{
+
+		}
+		else if( strcmp(cmd.pchCommand, "inv")==0 )
+		{
+
+		}
+		else if (strcmp(cmd.pchCommand, "alert")==0)
+		{
+		}
+		else if (strcmp(cmd.pchCommand, "addr")==0)
+		{
+		}
+#endif
 		else if (strcmp(cmd.pchCommand, "block") == 0)
 		{
 			shared_ptr<CBlock> pBlock(new CBlock);
@@ -177,18 +193,6 @@ void CPeerNode::on_recv(const boost::system::error_code& ec, size_t len)
 				m_headers_pool.push_back( pHeaders );
 			}
 		}
-// 		else if (strcmp(cmd.pchCommand, "verack") == 0)
-// 		{
-// 		}
-// 		else if (strcmp(cmd.pchCommand, "inv") == 0)
-// 		{
-// 			std::vector<CInv> invs;
-// 			stm >> invs;
-// 			for (auto it = invs.begin(); it != invs.end(); ++it)
-// 			{
-// 				CInv& v = *it;
-// 			}
-// 		}
 		m_data.erase(m_data.begin(), m_data.begin() + sizeof(cmd) + cmd.nMessageSize);
 	}
 }

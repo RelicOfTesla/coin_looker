@@ -12,8 +12,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{023F1D39-EEF0-4DEC-95E9-8E2EACCBC76A}</ProjectGuid>
-    <RootNamespace>btc_looker</RootNamespace>
+    <RootNamespace>coin_looker</RootNamespace>
     <Keyword>MFCProj</Keyword>
+    <ProjectName>coin_looker</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -110,14 +111,14 @@
     <ClInclude Include="IUserContext.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="src\bignum.h" />
-    <ClInclude Include="src\btc_def.h" />
-    <ClInclude Include="src\btc_helper.h" />
-    <ClInclude Include="src\btc_looker.h" />
-    <ClInclude Include="src\btc_lookerDlg.h" />
-    <ClInclude Include="src\btc_peer.h" />
-    <ClInclude Include="src\btc_peer.hpp" />
-    <ClInclude Include="src\btc_protocol.h" />
-    <ClInclude Include="src\btc_stream.hpp" />
+    <ClInclude Include="src\coin_def.h" />
+    <ClInclude Include="src\coin_helper.h" />
+    <ClInclude Include="src\coin_looker.h" />
+    <ClInclude Include="src\coin_lookerDlg.h" />
+    <ClInclude Include="src\coin_peer.h" />
+    <ClInclude Include="src\coin_peer.hpp" />
+    <ClInclude Include="src\coin_protocol.h" />
+    <ClInclude Include="src\coin_stream.hpp" />
     <ClInclude Include="src\ICoinOption.h" />
     <ClInclude Include="src\RecvDialog.h" />
     <ClInclude Include="src\stdafx.h" />
@@ -125,11 +126,11 @@
     <ClInclude Include="src\util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\btc_helper.cpp" />
-    <ClCompile Include="src\btc_kernel.cpp" />
-    <ClCompile Include="src\btc_looker.cpp" />
-    <ClCompile Include="src\btc_lookerDlg.cpp" />
-    <ClCompile Include="src\btc_peer.cpp" />
+    <ClCompile Include="src\coin_helper.cpp" />
+    <ClCompile Include="src\coin_kernel.cpp" />
+    <ClCompile Include="src\coin_looker.cpp" />
+    <ClCompile Include="src\coin_lookerDlg.cpp" />
+    <ClCompile Include="src\coin_peer.cpp" />
     <ClCompile Include="src\JsonCoinOption.cpp" />
     <ClCompile Include="src\RecvDialog.cpp" />
     <ClCompile Include="src\stdafx.cpp">
@@ -139,18 +140,18 @@
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="btc_looker.rc" />
+    <ResourceCompile Include="coin_looker.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\btc_looker.ico" />
-    <None Include="res\btc_looker.rc2" />
+    <None Include="res\coin_looker.ico" />
+    <None Include="res\coin_looker.rc2" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties RESOURCE_FILE="btc_looker.rc" />
+      <UserProperties RESOURCE_FILE="coin_looker.rc" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

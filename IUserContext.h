@@ -10,9 +10,15 @@ struct IUserContext
 	{
 		std::string RecvCoinAddr;
 		double RecvMoney;
-		double LastMoney;
-		time_t LastTime;
 
+		struct transaction_data 
+		{
+			std::string txid;
+			double money;
+			time_t time;
+		};
+
+		std::vector< transaction_data > trans_list;
 	};
 
 	virtual void load_db() = 0;

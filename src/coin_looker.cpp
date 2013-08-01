@@ -1,24 +1,41 @@
 
-// btc_looker.cpp : 定义应用程序的类行为。
+// coin_looker.cpp : 定义应用程序的类行为。
 //
 
 #include "stdafx.h"
-#include "btc_looker.h"
-#include "btc_lookerDlg.h"
+#include "coin_looker.h"
+#include "coin_lookerDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+void dbg_printf(const char* format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	CString str;
+	for (size_t buflen = 512; ; buflen*=2)
+	{
+		char* buf = str.GetBuffer(buflen);
+		if( wvnsprintf(buf, buflen, format, ap) < buflen-1)
+		{
+			str.ReleaseBuffer();
+			OutputDebugString(buf);
+			break;
+		}
+	}
+	
+}
 
-// Cbtc_lookerApp
+// Ccoin_lookerApp
 
-BEGIN_MESSAGE_MAP(Cbtc_lookerApp, CWinApp)
+BEGIN_MESSAGE_MAP(Ccoin_lookerApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-// Cbtc_lookerApp 构造
-Cbtc_lookerApp::Cbtc_lookerApp()
+// Ccoin_lookerApp 构造
+Ccoin_lookerApp::Ccoin_lookerApp()
 {
 #if _MFC_VER >= 0x0A00
 	// 支持重新启动管理器
@@ -29,14 +46,14 @@ Cbtc_lookerApp::Cbtc_lookerApp()
 }
 
 
-// 唯一的一个 Cbtc_lookerApp 对象
+// 唯一的一个 Ccoin_lookerApp 对象
 
-Cbtc_lookerApp theApp;
+Ccoin_lookerApp theApp;
 
 
-// Cbtc_lookerApp 初始化
+// Ccoin_lookerApp 初始化
 
-BOOL Cbtc_lookerApp::InitInstance()
+BOOL Ccoin_lookerApp::InitInstance()
 {
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
@@ -70,7 +87,7 @@ BOOL Cbtc_lookerApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-	Cbtc_lookerDlg dlg;
+	Ccoin_lookerDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)

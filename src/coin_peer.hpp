@@ -1,9 +1,9 @@
 #pragma once
 
-#include "btc_peer.h"
+#include "coin_peer.h"
 #include <boost/thread/mutex.hpp>
-#include <sdk/boost_lib/asio.hpp>
 #include <boost/any.hpp>
+#include <sdk/boost_lib/asio.hpp>
 
 
 namespace asio = boost::asio;

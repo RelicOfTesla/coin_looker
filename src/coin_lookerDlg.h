@@ -1,5 +1,5 @@
 
-// btc_lookerDlg.h : 头文件
+// coin_lookerDlg.h : 头文件
 //
 
 #pragma once
@@ -7,15 +7,15 @@
 #include <vector>
 #include "afxcmn.h"
 
-// Cbtc_lookerDlg 对话框
-class Cbtc_lookerDlg : public CDialogEx
+// Ccoin_lookerDlg 对话框
+class Ccoin_lookerDlg : public CDialogEx
 {
 // 构造
 public:
-	Cbtc_lookerDlg(CWnd* pParent = NULL);	// 标准构造函数
+	Ccoin_lookerDlg(CWnd* pParent = NULL);	// 标准构造函数
 
 // 对话框数据
-	enum { IDD = IDD_BTC_LOOKER_DIALOG };
+	enum { IDD = IDD_COIN_LOOKER_DIALOG };
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持

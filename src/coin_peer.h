@@ -3,7 +3,7 @@
 //#include <boost/asio/ip/tcp.hpp>
 #include <sdk/binary.h>
 #include <sdk/boost_lib/signals.hpp>
-#include "btc_def.h"
+#include "coin_def.h"
 
 struct ICoinOption;
 struct CBlock;

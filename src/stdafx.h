@@ -48,6 +48,8 @@ using boost::shared_ptr;
 #include <boost/enable_shared_from_this.hpp>
 using boost::enable_shared_from_this;
 
+#define printf dbg_printf
+void dbg_printf(const char* format, ...);
 
 #if _MFC_VER <= 0x0900
 #define CDialogEx CDialog

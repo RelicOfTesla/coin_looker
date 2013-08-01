@@ -3,7 +3,7 @@
 #include <sdk/binary.h>
 #include <array>
 
-#include "btc_def.h"
+#include "coin_def.h"
 
 /** Message header.
  * (4) message start.

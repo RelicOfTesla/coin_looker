@@ -1,11 +1,11 @@
 #pragma once
-#include "btc_protocol.h"
+#include "coin_protocol.h"
 
 #include <sdk/binary_stream.hpp>
 
-struct btcnet_istream
+struct coinnet_istream
 {
-	btcnet_istream(const binary& bin) : istm(bin)
+	coinnet_istream(const binary& bin) : istm(bin)
 	{}
 
 	bool has_buffer(size_t request_length)
@@ -15,15 +15,15 @@ struct btcnet_istream
 
 	binary_istream istm;
 };
-struct btcnet_ostream
+struct coinnet_ostream
 {
 	binary_ostream ostm;
 };
 
 template<>
-struct pod_archive<btcnet_istream> 
+struct pod_archive<coinnet_istream> 
 {
-	static void invoke(btcnet_istream& stm, pod_buffer& dst)
+	static void invoke(coinnet_istream& stm, pod_buffer& dst)
 	{
 		stm.istm >> dst; 
 	}
@@ -31,9 +31,9 @@ struct pod_archive<btcnet_istream>
 
 
 template<>
-struct pod_archive<btcnet_ostream> 
+struct pod_archive<coinnet_ostream> 
 {
-	static void invoke(btcnet_ostream& stm, const pod_const_data& src)
+	static void invoke(coinnet_ostream& stm, const pod_const_data& src)
 	{
 		stm.ostm << src;
 	}
@@ -207,7 +207,7 @@ struct base_serialize_t<Stream,BYTE> : serialize_load_save<Stream,std::vector<BY
 
 
 template<typename T>
-struct serialize_t<btcnet_ostream, std::vector<T> >  : base_serialize_t<btcnet_ostream, T>
+struct serialize_t<coinnet_ostream, std::vector<T> >  : base_serialize_t<coinnet_ostream, T>
 {
 protected:
 	template<typename Archive>
@@ -216,7 +216,7 @@ protected:
 
 
 template<typename T>
-struct serialize_t<btcnet_istream, std::vector<T> >  : base_serialize_t<btcnet_istream, T>
+struct serialize_t<coinnet_istream, std::vector<T> >  : base_serialize_t<coinnet_istream, T>
 {
 protected:
 	template<typename Archive>

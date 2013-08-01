@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "btc_helper.h"
+#include "coin_helper.h"
 #include <sdk/binary_stream.hpp>
-#include "btc_protocol.h"
+#include "coin_protocol.h"
 #include "ICoinOption.h"
 
 enum {

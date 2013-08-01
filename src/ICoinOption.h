@@ -1,6 +1,6 @@
 #pragma once
 
-#include "btc_def.h"
+#include "coin_def.h"
 #include <vector>
 #include <array>
 

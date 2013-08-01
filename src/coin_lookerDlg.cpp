@@ -1,10 +1,10 @@
 
-// btc_lookerDlg.cpp : 实现文件
+// coin_lookerDlg.cpp : 实现文件
 //
 
 #include "stdafx.h"
-#include "btc_looker.h"
-#include "btc_lookerDlg.h"
+#include "coin_looker.h"
+#include "coin_lookerDlg.h"
 #include "RecvDialog.h"
 #if _MFC_VER >= 0x0A00
 #include "afxdialogex.h"
@@ -21,7 +21,7 @@
 #endif
 
 
-// Cbtc_lookerDlg 对话框
+// Ccoin_lookerDlg 对话框
 
 std::string GetAppDir();
 std::list<shared_ptr< ICoinOption > > LoadCoinList(const std::string& dir);
@@ -30,31 +30,31 @@ std::list<shared_ptr< ICoinOption > > LoadCoinList(const std::string& dir);
 std::list<shared_ptr< ICoinOption > > g_CoinList;
 
 
-Cbtc_lookerDlg::Cbtc_lookerDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(Cbtc_lookerDlg::IDD, pParent)
+Ccoin_lookerDlg::Ccoin_lookerDlg(CWnd* pParent /*=NULL*/)
+	: CDialogEx(Ccoin_lookerDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
-void Cbtc_lookerDlg::DoDataExchange(CDataExchange* pDX)
+void Ccoin_lookerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_TAB1, m_tab1);
 }
 
-BEGIN_MESSAGE_MAP(Cbtc_lookerDlg, CDialogEx)
+BEGIN_MESSAGE_MAP(Ccoin_lookerDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDOK, &Cbtc_lookerDlg::OnBnClickedOk)
-	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &Cbtc_lookerDlg::OnTcnSelchangeTab1)
-	ON_NOTIFY(TCN_SELCHANGING, IDC_TAB1, &Cbtc_lookerDlg::OnTcnSelchangingTab1)
+	ON_BN_CLICKED(IDOK, &Ccoin_lookerDlg::OnBnClickedOk)
+	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &Ccoin_lookerDlg::OnTcnSelchangeTab1)
+	ON_NOTIFY(TCN_SELCHANGING, IDC_TAB1, &Ccoin_lookerDlg::OnTcnSelchangingTab1)
 	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
-// Cbtc_lookerDlg 消息处理程序
+// Ccoin_lookerDlg 消息处理程序
 
-BOOL Cbtc_lookerDlg::OnInitDialog()
+BOOL Ccoin_lookerDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -94,7 +94,7 @@ BOOL Cbtc_lookerDlg::OnInitDialog()
 //  来绘制该图标。对于使用文档/视图模型的 MFC 应用程序，
 //  这将由框架自动完成。
 
-void Cbtc_lookerDlg::OnPaint()
+void Ccoin_lookerDlg::OnPaint()
 {
 	if (IsIconic())
 	{
@@ -121,7 +121,7 @@ void Cbtc_lookerDlg::OnPaint()
 
 //当用户拖动最小化窗口时系统调用此函数取得光标
 //显示。
-HCURSOR Cbtc_lookerDlg::OnQueryDragIcon()
+HCURSOR Ccoin_lookerDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
@@ -130,7 +130,7 @@ void bitcoin_test();
 #include <stdexcept>
 
 
-void Cbtc_lookerDlg::OnBnClickedOk()
+void Ccoin_lookerDlg::OnBnClickedOk()
 {
 	try
 	{
@@ -143,7 +143,7 @@ void Cbtc_lookerDlg::OnBnClickedOk()
 }
 
 
-void Cbtc_lookerDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
+void Ccoin_lookerDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	m_vlist[m_tab1.GetCurSel()]->ShowWindow(SW_SHOW);
 	// TODO: 在此添加控件通知处理程序代码
@@ -151,7 +151,7 @@ void Cbtc_lookerDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 }
 
 
-void Cbtc_lookerDlg::OnTcnSelchangingTab1(NMHDR *pNMHDR, LRESULT *pResult)
+void Ccoin_lookerDlg::OnTcnSelchangingTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	m_vlist[m_tab1.GetCurSel()]->ShowWindow(SW_HIDE);
 	// TODO: 在此添加控件通知处理程序代码
@@ -159,7 +159,7 @@ void Cbtc_lookerDlg::OnTcnSelchangingTab1(NMHDR *pNMHDR, LRESULT *pResult)
 }
 
 
-void Cbtc_lookerDlg::OnClose()
+void Ccoin_lookerDlg::OnClose()
 {
 	for (auto it = m_vlist.begin(); it != m_vlist.end(); ++it)
 	{

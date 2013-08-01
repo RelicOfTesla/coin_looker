@@ -1,8 +1,8 @@
 #pragma once
 
-#include "btc_def.h"
-#include <sdk/binary.h>
+#include "coin_def.h"
 #include <string>
+#include <sdk/binary.h>
 
 std::string base58_encode(const void* src, size_t len);
 binary base58_decode(const char* s);

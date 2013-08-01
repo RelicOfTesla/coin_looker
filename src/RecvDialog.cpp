@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "btc_looker.h"
+#include "coin_looker.h"
 #include "RecvDialog.h"
 #if _MFC_VER >= 0x0A00
 #include "afxdialogex.h"
@@ -20,13 +20,6 @@ CString TT2CS(time_t nt)
 	return ct.Format("%Y-%m-%d %H:%M:%S");
 }
 
-struct workdata 
-{
-	std::string RecvCoinAddr;
-	double RecvMoney;
-	double LastMoney;
-	time_t LastTime;
-};
 // CRecvDialog ¶Ô»°¿ò
 
 enum {
@@ -83,6 +76,7 @@ BOOL CRecvDialog::OnInitDialog()
 	}
 
 	SetTimer(1, 5000, 0);
+	PostMessage(WM_TIMER, 1, 0);
 	SetTimer(2, 1000, 0);
 
 	return FALSE;
@@ -97,10 +91,19 @@ void CRecvDialog::OnTimer(UINT_PTR nIDEvent)
 		for (int nItem = 0; nItem < m_list.GetItemCount(); ++nItem)
 		{
 			CString addr = m_list.GetItemText(nItem, ITEM_COIN_ADDR);
-			auto data = m_pWork->work_get_data(addr);
+			IUserContext::workdata data = m_pWork->work_get_data(addr);
 			m_list.SetItemText(nItem, ITEM_COIN_BALANCE, boost::lexical_cast<std::string>(data.RecvMoney).c_str());
-			m_list.SetItemText(nItem, ITEM_LAST_DATE, TT2CS(data.LastTime));
-			m_list.SetItemText(nItem, ITEM_LAST_MONEY, boost::lexical_cast<std::string>(data.LastMoney).c_str());
+			if (data.trans_list.size())
+			{
+				IUserContext::workdata::transaction_data& last = *data.trans_list.rbegin();
+				m_list.SetItemText(nItem, ITEM_LAST_DATE, TT2CS(last.time));
+				m_list.SetItemText(nItem, ITEM_LAST_MONEY, boost::lexical_cast<std::string>(last.money).c_str());
+			}
+			else
+			{
+				m_list.SetItemText(nItem, ITEM_LAST_DATE, "");
+				m_list.SetItemText(nItem, ITEM_LAST_MONEY, "");
+			}
 		}
 	}
 	else if (nIDEvent == 2)
