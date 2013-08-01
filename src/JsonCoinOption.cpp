@@ -38,7 +38,7 @@ struct CJsonCoinOption : ICoinOption
 			this->first_blocktime = jsv["first_block_time"].asInt();
 			if ((int)this->first_blocktime < 0)
 			{
-				this->first_blocktime = time(0) + this->first_blocktime;
+				this->first_blocktime = _time32(0) + int(this->first_blocktime);
 			}
 			this->PubkeyStart = jsv["Pubkey_Start"].asInt();
 

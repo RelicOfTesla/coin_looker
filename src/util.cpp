@@ -132,7 +132,7 @@ binary from_hex(const char* src)
 	{
 		hex[0] = src[i];
 		hex[1] = src[i+1];
-		r.push_back( strtol(hex, nullptr, 16) );
+		r.push_back( BYTE(strtol(hex, nullptr, 16)) );
 	}
 	return r;
 }

@@ -15,7 +15,7 @@ void dbg_printf(const char* format, ...)
 	va_list ap;
 	va_start(ap, format);
 	CString str;
-	for (size_t buflen = 512; ; buflen*=2)
+	for (int buflen = 512; ; buflen*=2)
 	{
 		char* buf = str.GetBuffer(buflen);
 		if( wvnsprintf(buf, buflen, format, ap) < buflen-1)
