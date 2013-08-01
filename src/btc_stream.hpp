@@ -175,6 +175,37 @@ struct base_serialize_t : serialize_load_save<Stream,std::vector<T> >
 	}
 };
 
+
+template<typename Stream>
+struct base_serialize_t<Stream,BYTE> : serialize_load_save<Stream,std::vector<BYTE> >
+{
+	template<typename Archive>
+	static void load(Archive& ar, std::vector<BYTE>& v)
+	{
+		CompactSize nsize;
+		ar >> nsize;
+		assert( nsize.size() <= 0xffff );
+		v.resize(nsize.size());
+		if (v.size())
+		{
+			ar >> pod_buffer(&v[0], v.size());
+		}
+	}
+
+	template<typename Archive>
+	static void save(Archive& ar, const std::vector<BYTE>& v)
+	{
+		assert( v.size() <= 0xffff );
+		ar << CompactSize(v.size());
+		if (v.size())
+		{
+			ar << pod_const_data(v.data(), v.size());
+		}
+	}
+};
+
+
+
 template<typename T>
 struct serialize_t<btcnet_ostream, std::vector<T> >  : base_serialize_t<btcnet_ostream, T>
 {
@@ -182,6 +213,7 @@ protected:
 	template<typename Archive>
 	static void load(Archive& ar, const std::vector<T>& v);
 };
+
 
 template<typename T>
 struct serialize_t<btcnet_istream, std::vector<T> >  : base_serialize_t<btcnet_istream, T>
@@ -195,6 +227,7 @@ template<typename T>
 struct serialize_t<struct win32_fstream, std::vector<T> >  : base_serialize_t<win32_fstream, T>
 {
 };
+
 
 template<typename Stream>
 struct serialize_t<Stream, CBlock>

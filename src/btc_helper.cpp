@@ -22,36 +22,55 @@ enum {
 };
 
 
-
-#pragma pack(push, 1)
-struct CoinRawAddress
+CoinKey::CoinKey(const std::string& src)
 {
-	BYTE AddrType;
-	ripemd160 hash160;
-	UINT32 nChecksum;
-};
-#pragma pack(pop)
-std::string hash160_to_CoinAddress(const uint160& hash_value, BYTE addrType)
+	binary bin = base58_decode(src.c_str());
+	if (bin.size() == sizeof(m_data))
+	{
+		memcpy(&m_data, &bin[0], bin.size());
+	}
+	else
+	{
+		memset(&m_data, 0, sizeof(m_data));
+	}
+}
+CoinKey::CoinKey(const CoinRawAddress& src)
+{
+	m_data = src;
+}
+bool CoinKey::operator ==(const CoinKey& r)const
+{
+	return memcmp(&m_data, &r.m_data, sizeof(m_data)) == 0;
+}
+bool CoinKey::operator <(const CoinKey& r)const
+{
+	return memcmp(&m_data, &r.m_data, sizeof(m_data)) < 0;
+}
+std::string CoinKey::to_str()const
+{
+	std::string str = base58_encode(&m_data, sizeof(m_data));
+	return str;
+}
+
+CoinRawAddress g_CoinRawAddress_null = {0};
+bool CoinKey::empty()const
+{
+	return *this == g_CoinRawAddress_null;
+}
+
+
+CoinKey hash160_to_CoinKey(const uint160& hash_value, ICoinOption* profile)
 {
 	CoinRawAddress raddr;
-	raddr.AddrType = addrType;
+	raddr.AddrType = profile->PubkeyStart;
 	raddr.hash160 = hash_value;
 	raddr.nChecksum = 0;
 	uint256 h256 = double_sha256(&raddr, sizeof(BYTE)+sizeof(ripemd160));
 	raddr.nChecksum = *(UINT32*)&h256;
-#if _DEBUG
-	std::string szHash160 = to_hex(&hash_value, sizeof(hash_value));
-#endif
-	std::string str = base58_encode(&raddr, sizeof(raddr));
-	return str;
-};
-
-std::string hash160_to_CoinAddress(const uint160& hash_value, ICoinOption* profile)
-{
-	return hash160_to_CoinAddress(hash_value, profile->PubkeyStart);
+	return raddr;
 }
 
-std::string script_get_coin_address(ICoinOption* pCoinOption, const CScript& script)
+CoinKey script_get_coin_key(ICoinOption* pCoinOption, const CScript& script)
 {
 	binary_istream bi(script.data);
 	if (bi.has_buffer(3))
@@ -114,7 +133,7 @@ std::string script_get_coin_address(ICoinOption* pCoinOption, const CScript& scr
 						if (buf.size() == sizeof(hash160))
 						{
 							hash160 v = *(hash160*)&buf[0];
-							return hash160_to_CoinAddress(v, pCoinOption);							
+							return hash160_to_CoinKey(v, pCoinOption);							
 						}
 						break;
 					case OP_HASH256:
@@ -131,10 +150,8 @@ std::string script_get_coin_address(ICoinOption* pCoinOption, const CScript& scr
 
 		}
 	}
-	return "";
-};
-
-
+	return g_CoinRawAddress_null;
+}
 
 
 uint160 _hash_160(const BYTE* src, size_t len)

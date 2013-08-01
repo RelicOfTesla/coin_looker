@@ -45,6 +45,53 @@ std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
 	reverse(str.begin(), str.end());
 	return str;
 }
+// Decode a base58-encoded string psz into byte vector vchRet
+// returns true if decoding is successful
+inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
+{
+	CAutoBN_CTX pctx;
+	vchRet.clear();
+	CBigNum bn58 = 58;
+	CBigNum bn = 0;
+	CBigNum bnChar;
+	while (isspace(*psz))
+		psz++;
+
+	// Convert big endian string to bignum
+	for (const char* p = psz; *p; p++)
+	{
+		const char* p1 = strchr(pszBase58, *p);
+		if (p1 == NULL)
+		{
+			while (isspace(*p))
+				p++;
+			if (*p != '\0')
+				return false;
+			break;
+		}
+		bnChar.setulong(p1 - pszBase58);
+		if (!BN_mul(&bn, &bn, &bn58, pctx))
+			throw bignum_error("DecodeBase58 : BN_mul failed");
+		bn += bnChar;
+	}
+
+	// Get bignum as little endian data
+	std::vector<unsigned char> vchTmp = bn.getvch();
+
+	// Trim off sign byte if present
+	if (vchTmp.size() >= 2 && vchTmp.end()[-1] == 0 && vchTmp.end()[-2] >= 0x80)
+		vchTmp.erase(vchTmp.end()-1);
+
+	// Restore leading zeros
+	int nLeadingZeros = 0;
+	for (const char* p = psz; *p == pszBase58[0]; p++)
+		nLeadingZeros++;
+	vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
+
+	// Convert little endian data to big endian
+	reverse_copy(vchTmp.begin(), vchTmp.end(), vchRet.end() - vchTmp.size());
+	return true;
+}
 
 std::string base58_encode(const void* pd, size_t len)
 {
@@ -52,6 +99,12 @@ std::string base58_encode(const void* pd, size_t len)
 	return EncodeBase58(p, &p[len]);
 }
 
+binary base58_decode(const char* s)
+{
+	binary bin;
+	DecodeBase58(s, bin);
+	return bin;
+}
 //////////////////////////////////////////////////////////////////////////
 std::string to_hex(const void* src, size_t len)
 {

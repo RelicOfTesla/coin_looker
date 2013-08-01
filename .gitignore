@@ -4,3 +4,5 @@
 /out/btc_looker.pdb
 /out/btc_lookerD.exe
 /out/btc_lookerD.pdb
+
+/out/*.blocks

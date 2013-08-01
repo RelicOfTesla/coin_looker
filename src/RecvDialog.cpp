@@ -105,7 +105,7 @@ void CRecvDialog::OnTimer(UINT_PTR nIDEvent)
 	}
 	else if (nIDEvent == 2)
 	{
-		GetDlgItem(IDC_STATIC_CUR_TIME)->SetWindowText(""+TT2CS(m_pWork->work_get_current_time()));
+		GetDlgItem(IDC_STATIC_CUR_TIME)->SetWindowText("当前块时间："+TT2CS(m_pWork->work_get_current_time()));
 	}
 	CDialog::OnTimer(nIDEvent);
 }

@@ -6,9 +6,32 @@ struct ICoinOption;
 struct CScript;
 struct CBlockHeader;
 
-std::string hash160_to_CoinAddress(const uint160& hash_value, BYTE addrType);
-std::string hash160_to_CoinAddress(const uint160& hash_value, ICoinOption* profile);
-std::string script_get_coin_address(ICoinOption* pCoinOption, const CScript& script);
+
+#pragma pack(push, 1)
+struct CoinRawAddress
+{
+	BYTE AddrType;
+	ripemd160 hash160;
+	UINT32 nChecksum;
+};
+#pragma pack(pop)
+
+struct CoinKey
+{
+	CoinRawAddress m_data;
+
+	CoinKey(const std::string& src);
+	CoinKey(const CoinRawAddress& src);
+
+	bool operator == (const CoinKey& r)const;
+	bool operator < (const CoinKey& r)const;
+
+	std::string to_str()const;
+
+	bool empty()const;
+};
+
+CoinKey script_get_coin_key(ICoinOption* pCoinOption, const CScript& script);
 
 uint160 _hash_160(const BYTE* src, size_t len);
 uint256 _hash_256(const BYTE* src, size_t len);

@@ -118,7 +118,7 @@ void CLocalBlockDB::save_to_file(const std::string& name, const CLocalBlockDB& b
 
 struct CUserBook
 {
-	std::set< std::string > RecvCoinAddr;
+	std::set< CoinKey > RecvCoinList;
 	
 };
 
@@ -171,10 +171,10 @@ public:
 					int out_index = 0;
 					for (auto oit = tx.vout.begin(); oit != tx.vout.end(); ++oit)
 					{
-						std::string addr = script_get_coin_address(m_pCoinOption.get(), oit->scriptPubKey);
-						if (addr.size())
+						CoinKey addr = script_get_coin_key(m_pCoinOption.get(), oit->scriptPubKey);
+						if (!addr.empty())
 						{
-							if( m_pUserData->RecvCoinAddr.find(addr) != m_pUserData->RecvCoinAddr.end() )
+							if( m_pUserData->RecvCoinList.find(addr) != m_pUserData->RecvCoinList.end() )
 							{
 								tmi.out_index = out_index;
 								break;
@@ -205,7 +205,11 @@ public:
 		boost::split(pList, pFile, boost::is_space());
 		for (auto it = pList.begin(); it != pList.end(); ++it)
 		{
-			m_pUserData->RecvCoinAddr.insert(*it);
+			CoinKey key(*it);
+			if (!key.empty())
+			{
+				m_pUserData->RecvCoinList.insert(key);
+			}
 		}
 	}
 
@@ -346,10 +350,10 @@ void CWorkContext::filter_block(const uint256& block_hash, const CBlock& blk)
 			{
 				const CTxOut& out = *oit;
 				double money = ToMoney(out.nValue);
-				std::string coin_address = script_get_coin_address(m_pCoinOption.get(), out.scriptPubKey);
-				if (coin_address.size())
+				CoinKey key = script_get_coin_key(m_pCoinOption.get(), out.scriptPubKey);
+				if (!key.empty())
 				{
-					if (m_pUserData->RecvCoinAddr.find(coin_address) != m_pUserData->RecvCoinAddr.end())
+					if (m_pUserData->RecvCoinList.find(key) != m_pUserData->RecvCoinList.end())
 					{
 						new_tmi.out_index = out_idx;
 						save_tx = true;
@@ -449,23 +453,29 @@ public:
 	std::vector<std::string> work_get_books()
 	{
 		std::vector<std::string> result;
-		for (auto it = this->m_pUserData->RecvCoinAddr.begin(); it!=this->m_pUserData->RecvCoinAddr.end(); ++it)
+		for (auto it = this->m_pUserData->RecvCoinList.begin(); it!=this->m_pUserData->RecvCoinList.end(); ++it)
 		{
-			if (it->size())
+			if (!it->empty())
 			{
-				result.push_back(*it);
+				result.push_back(it->to_str());
 			}
 		}
 		return result;
 	}
 
-	workdata work_get_data(const char* CoinAddr)
+	workdata work_get_data(const char* pCoinAddr)
 	{
 		workdata wd;
-		wd.RecvCoinAddr = CoinAddr;
+		wd.RecvCoinAddr = pCoinAddr;
 		wd.LastMoney = 0;
 		wd.RecvMoney = 0;
 		wd.LastTime = 0;
+		CoinKey CoinAddr(pCoinAddr);
+		if (CoinAddr.empty())
+		{
+			return wd;
+		}
+
 		__int64 LastMoney = 0;
 		__int64 RecvMoney = 0;
 		std::map< uint256,shared_ptr<CBlock> > blocks;
@@ -490,14 +500,17 @@ public:
 						const CTxOut& vout = GetTransactionOut(blocks, TxMaps, iit->prevout );
 						if (&vout != &g_TxOut_null)
 						{
-							std::string addr = script_get_coin_address(this->m_pCoinOption.get(), vout.scriptPubKey);
-							if (addr.size() && strcmp(CoinAddr, addr.c_str()) == 0)
+							CoinKey key = script_get_coin_key(this->m_pCoinOption.get(), vout.scriptPubKey);
+							if (!key.empty())
 							{
-								RecvMoney -= vout.nValue;
-								if (wd.LastTime < blk->nTime)
+								if ( key == CoinAddr)
 								{
-									wd.LastTime = blk->nTime;
-									LastMoney = -vout.nValue;
+									RecvMoney -= vout.nValue;
+									if (wd.LastTime < blk->nTime)
+									{
+										wd.LastTime = blk->nTime;
+										LastMoney = -vout.nValue;
+									}
 								}
 							}
 						}
@@ -505,14 +518,17 @@ public:
 				}
 				for (auto oit = t.vout.begin(); oit != t.vout.end(); ++oit)
 				{
-					std::string addr = script_get_coin_address(this->m_pCoinOption.get(), oit->scriptPubKey);
-					if (addr.size() && strcmp(CoinAddr, addr.c_str()) == 0)
+					CoinKey key = script_get_coin_key(this->m_pCoinOption.get(), oit->scriptPubKey);
+					if (!key.empty())
 					{
-						RecvMoney += oit->nValue;
-						if (wd.LastTime < blk->nTime)
+						if (key == CoinAddr)
 						{
-							wd.LastTime = blk->nTime;
-							LastMoney = oit->nValue;
+							RecvMoney += oit->nValue;
+							if (wd.LastTime < blk->nTime)
+							{
+								wd.LastTime = blk->nTime;
+								LastMoney = oit->nValue;
+							}
 						}
 					}
 				}
